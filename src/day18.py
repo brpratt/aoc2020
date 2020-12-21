@@ -1,72 +1,43 @@
-from enum import Enum
-from typing import Iterator
+from typing import Union
 
-class Token:
-    pass
 
-class Number(Token):
-    def __init__(self, value: int):
-        self.value = value
-
-class Operator(Token):
-    def __init__(self, value: str):
-        self.value = value
-
-class OpenParen(Token):
-    pass
-
-class CloseParen(Token):
-    pass
-
-def tokenize(expr: str) -> Iterator[Token]:
+def tokenize(expr: str) -> list[Union[int, str]]:
     i = 0
+    tokens = []
     while i < len(expr):
         j = i
         if expr[j].isnumeric():
             while j < len(expr) and expr[j].isnumeric():
                 j += 1
-            yield Number(int(expr[i:j]))
-        elif expr[j] == "+" or expr[j] == "*":
-            yield Operator(expr[j])
-            j += 1
-        elif expr[j] == "(":
-            yield OpenParen()
-            j += 1
-        elif expr[j] == ")":
-            yield CloseParen()
+            tokens.append(int(expr[i:j]))
+        else:
+            tokens.append(expr[j])
             j += 1
         i = j
         while i < len(expr) and expr[i] == " ":
             i += 1
-
-
-class Operation(Enum):
-    OPERAND1 = 1,
-    OPERATOR = 2,
-    OPERAND2 = 3
+    return tokens
 
 def calc(expr: str) -> int:
     stack = []
-    
-    def compute():
-        if len(stack) > 2 and isinstance(stack[-2], Operator):
-            num1, op, num2 = stack.pop(), stack.pop(), stack.pop()
-            if op.value == "+":
-                stack.append(Number(num1.value + num2.value))
-            else:
-                stack.append(Number(num1.value * num2.value))
 
     for token in tokenize(expr):
-        if isinstance(token, Number):
-            stack.append(token)
-            compute()        
-        elif isinstance(token, CloseParen):
-            num, _ = stack.pop(), stack.pop()
+        stack.append(token)
+
+        if stack[-1] == ")":
+            assert type(stack[-2]) == int
+            assert stack[-3] == "("
+            _, num, _ = stack.pop(), stack.pop(), stack.pop()
             stack.append(num)
-            compute()
-        else:
-            stack.append(token)
-    return stack.pop().value
+        if type(stack[-1]) == int and len(stack) > 1:
+            if stack[-2] == "+":
+                num1, _, num2 = stack.pop(), stack.pop(), stack.pop()
+                stack.append(num1 + num2)
+            elif stack[-2] == "*":
+                num1, _, num2 = stack.pop(), stack.pop(), stack.pop()
+                stack.append(num1 * num2)
+    return stack.pop()
+
 
 def solve_part_1(exprs: list[str]) -> int:
     return sum(calc(expr) for expr in exprs)
